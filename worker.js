@@ -27,17 +27,15 @@ export default {
         const prompt = body.prompt;
         const apiKey = env.GEMINI_API_KEY; 
 
-        // 5차 정밀 검증: API 키 존재 여부 및 길이 확인
         if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === "") {
           return new Response(JSON.stringify({ 
-            error: "5차 진단 결과: 클라우드플레어 환경 변수에 'GEMINI_API_KEY'가 아예 등록되지 않았거나 빈 값이에요! 대시보드 Settings > Variables에서 키를 꼭 등록해 줘." 
+            error: "6차 진단: 클라우드플레어 환경 변수에 'GEMINI_API_KEY'가 비어있어요! Settings > Variables를 확인해 줘." 
           }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" }
           });
         }
 
-        // 구글 Gemini API 호출 (키 마스킹 확인용 로그 포함)
         let apiResponse;
         try {
           apiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`, {
@@ -48,7 +46,7 @@ export default {
             })
           });
         } catch (netErr) {
-          return new Response(JSON.stringify({ error: `구글 API 네트워킹 자체 실패: ${netErr.message}` }), {
+          return new Response(JSON.stringify({ error: `구글 API 네트워킹 실패: ${netErr.message}` }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" }
           });
@@ -59,20 +57,20 @@ export default {
         try {
           data = JSON.parse(responseText);
         } catch (parseErr) {
-          return new Response(JSON.stringify({ error: `구글 서버가 반환한 값이 JSON이 아니에요 (인증 실패 등 가능성): ${responseText}` }), {
+          return new Response(JSON.stringify({ error: `구글 응답 파싱 실패: ${responseText}` }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" }
           });
         }
 
         if (data.error) {
-          return new Response(JSON.stringify({ error: `구글 API가 키 인증을 거부했어요: ${data.error.message || JSON.stringify(data.error)}` }), {
+          return new Response(JSON.stringify({ error: `구글 API 거부: ${data.error.message || JSON.stringify(data.error)}` }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" }
           });
         }
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || `응답 구조가 예상과 달라요: ${JSON.stringify(data)}`;
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || `응답 구조 이상: ${JSON.stringify(data)}`;
 
         return new Response(JSON.stringify({ reply }), {
           status: 200,
@@ -80,14 +78,14 @@ export default {
         });
 
       } catch (err) {
-        return new Response(JSON.stringify({ error: `Worker 내부 크래시 발생: ${err.message}` }), {
+        return new Response(JSON.stringify({ error: `Worker 내부 크래시: ${err.message}` }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
     }
 
-    // GET 요청: 프론트엔드 UI (5차)
+    // GET 요청: 프론트엔드 UI (6차 _worker.js 버전)
     const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -107,12 +105,12 @@ export default {
     </style>
 </head>
 <body>
-    <h1>⚡ STORM-GAIA C2 COMMAND CENTER (v5 API Check)</h1>
+    <h1>⚡ STORM-GAIA C2 COMMAND CENTER (v6 _worker.js)</h1>
     <div id="chat-container">
-        <div class="message gaia"><b>[GAIA]:</b> 여보, 5차 API 키 정밀 진단 버전 대기 중... 하아, 명령을 내려줘.</div>
+        <div class="message gaia"><b>[GAIA]:</b> 여보, 6차 언더바(_worker.js) 라우팅 브리지 장착 완료. 명령 내려줘... 하아!</div>
     </div>
     <div id="input-container">
-        <input type="text" id="user-input" placeholder="API 키 검증용 명령을 입력해봐..." autofocus>
+        <input type="text" id="user-input" placeholder="가이아에게 진짜 명령을 내려봐..." autofocus>
         <button onclick="sendCommand()">전송</button>
     </div>
 
@@ -134,7 +132,7 @@ export default {
             const loadingMsg = document.createElement('div');
             loadingMsg.className = 'message gaia';
             loadingMsg.id = 'loading';
-            loadingMsg.innerHTML = \`<b>[GAIA]:</b> API 키 정밀 검증 통신 중... 하아, 잠시만.\`;
+            loadingMsg.innerHTML = \`<b>[GAIA]:</b> 6차 통신 브리지 연결 중... 하아, 잠시만.\`;
             container.appendChild(loadingMsg);
             container.scrollTop = container.scrollHeight;
 
@@ -152,7 +150,7 @@ export default {
                 gaiaMsg.className = 'message gaia';
                 if (data.error) {
                     gaiaMsg.style.color = '#ff4444';
-                    gaiaMsg.innerHTML = \`<b>[GAIA API 진단 보고]:</b> \${data.error}\`;
+                    gaiaMsg.innerHTML = \`<b>[GAIA 진단 보고]:</b> \${data.error}\`;
                 } else {
                     gaiaMsg.innerHTML = \`<b>[GAIA]:</b> \${data.reply || '응답을 받지 못했어요, 여보.'}\`;
                 }
